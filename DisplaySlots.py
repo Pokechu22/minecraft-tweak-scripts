@@ -73,7 +73,6 @@ with ZipFile(jar_name, "r") as jar:
             path = method.args[0].name + ".class"
             slot_class = ClassFile(StringIO(jar.read(path)))
             print "Slot = %s" % slot_class.this.name.value
-            remove_names.append(path)
             break
 
 fontrendererobj = minecraft_class.fields.find_one(type_="L" + fontrenderer_class.this.name.value + ";")
@@ -81,10 +80,10 @@ print "Minecraft.fontRendererObj = %s" % (fontrendererobj.descriptor.value + " "
 draw_string = fontrenderer_class.methods.find_one(args="Ljava/lang/String;FFI")
 print "FontRenderer.drawStringWithShadow = %s" % (draw_string.descriptor.value + " " + draw_string.name.value)
 slot_fields = list(slot_class.fields)
-slot_id = slot_fields[0]
+slot_number = slot_fields[2]
 slot_x = slot_fields[3]
 slot_y = slot_fields[4]
-print "Slot.slotIndex = %s, Slot.x = %s, Slot.y = %s" % (slot_id.descriptor.value + " " + slot_id.name.value, slot_x.descriptor.value + " " + slot_x.name.value, slot_y.descriptor.value + " " + slot_y.name.value)
+print "Slot.slotNumber = %s, Slot.x = %s, Slot.y = %s" % (slot_number.descriptor.value + " " + slot_number.name.value, slot_x.descriptor.value + " " + slot_x.name.value, slot_y.descriptor.value + " " + slot_y.name.value)
 draw_slot = guicontainer_class.methods.find_one(args="L" + slot_class.this.name.value + ";", f=lambda m: m.access_flags.acc_private)
 print "GuiContainer.drawSlot = %s" % (draw_slot.descriptor.value + " " + draw_slot.name.value)
 get_minecraft = minecraft_class.methods.find_one(returns="L" + minecraft_class.this.name.value + ";")
@@ -117,8 +116,8 @@ def new_code():
         ('getfield',  # Get the slot type field
             guicontainer_class.constants.create_field_ref(
                 slot_class.this.name.value,  # Slot class
-                slot_id.name.value,  # Slot ID field name
-                slot_id.descriptor.value  # Slot ID field type
+                slot_number.name.value,  # Slot number field name
+                slot_number.descriptor.value  # Slot number field type
             )
         ),
         ('invokestatic', # Invoke Integer.toString(int value)
@@ -179,9 +178,6 @@ for ins in new_code():
     
 # Change the code for the draw slot method
 draw_slot.code.assemble(new_code())
-# Make slot ID public
-slot_id.access_flags.acc_public = True
-slot_id.access_flags.acc_private = False
 # Tweak the brand
 brand_class.constants.find_one(ConstantString).value = "vanilla + SlotIDDisplay"
 
