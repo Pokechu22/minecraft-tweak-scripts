@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" packages="com.mojang.util,pokechu22"> <!-- must add pokechu22 to packages -->
+    <Appenders>
+        <Console name="WINDOWS_COMPAT" target="SYSTEM_OUT"></Console>
+        <Queue name="TerminalConsole">
+            <PatternLayout pattern="[%d{HH:mm:ss} %level]: %msg%n" />
+        </Queue>
+        <RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="logs/%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss}] [%t/%level]: %msg%n" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <OnStartupTriggeringPolicy />
+            </Policies>
+        </RollingRandomAccessFile>
+        <!--
+            shutdownMethod is the name of the method to initiate a shutdown.
+            "safeShutdown" for all versions of Bukkit.
+            "func_71263_m" for all versions of Forge.
+            Varies for purely vanilla.
+            
+            restartScript is a script to call to start the server again.
+            
+            shutdownDelay is the time in milliseconds to give the server to shutdown before force-killing it.
+        -->
+        <Restarter name="ServerRestarter" shutdownMethod="safeShutdown" restartScript="start.bat" shutdownDelay="10000">
+            <filters>
+                <!-- Main match condition -->
+                <RegexFilter regex=".*Insert error message here.*" onMatch="ACCEPT" onMismatch="DENY"/>
+                <!-- You could add other things, like some kind of regex to ignore chat messages -->
+            </filters>
+        </Restarter>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <filters>
+                <MarkerFilter marker="NETWORK_PACKETS" onMatch="DENY" onMismatch="NEUTRAL" />
+            </filters>
+            <AppenderRef ref="SysOut"/>
+            <AppenderRef ref="File"/>
+            <AppenderRef ref="ServerGuiConsole"/>
+            <AppenderRef ref="ServerRestarter"/> <!-- This needs to be added -->
+        </Root>
+    </Loggers>
+</Configuration>

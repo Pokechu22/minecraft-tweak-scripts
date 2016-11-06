@@ -1,1 +1,8 @@
 *.jar
+*.class
+*.txt
+*.log
+*.gz
+*.properties
+*.json
+*.dat
