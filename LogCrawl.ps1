@@ -13,7 +13,8 @@ foreach ($file in $files) {
     $stream = [System.IO.File]::OpenRead($file)
     $gzstream = [System.IO.Compression.GZipStream]::new($stream, [System.IO.Compression.CompressionMode]::Decompress)
     $streamreader = [System.IO.StreamReader]::new($gzstream)
-    while ($line = $streamreader.ReadLine()) {
+    while (-not $streamreader.EndOfStream) {
+        $line = $streamreader.ReadLine()
         if ($line -imatch $regex) {
             if ($file -ne $lastfile) {
                 $lastfile = $file
