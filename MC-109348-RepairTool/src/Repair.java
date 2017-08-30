@@ -6,15 +6,27 @@ import net.minecraft.world.level.chunk.storage.RegionFile;
 public class Repair {
 	public static void main(String[] args) throws Exception {
 		if (args.length == 0) {
-			System.out.println("Usage: java Repair <region>");
+			System.out.println("Usage: java Repair <regions>");
 			return;
 		}
 
-		File file = new File(args[0]);
+		for (String arg : args) {
+			File file = new File(arg);
+			System.out.println("Processing " + file);
+			process(file);
+		}
+	}
+
+	private static void process(File file) throws Exception {
 		RegionFile region = new RegionFile(file);
 		for (int chunkX = 0; chunkX <= 31; chunkX++) {
 			for (int chunkZ = 0; chunkZ <= 31; chunkZ++) {
-				CompoundTag chunk = NbtIo.read(region.getChunkDataInputStream(chunkX, chunkZ));
+				DataInputStream dis = region.getChunkDataInputStream(chunkX, chunkZ);
+				if (dis == null) {
+					// No chunk data at that location - this is normal
+					continue;
+				}
+				CompoundTag chunk = NbtIo.read(dis);
 				CompoundTag level = chunk.getCompound("Level");
 				@SuppressWarnings("unchecked")
 				ListTag<CompoundTag> tileEntities = (ListTag<CompoundTag>)level.getList("TileEntities");
@@ -53,7 +65,6 @@ public class Repair {
 			}
 		}
 	}
-	
 
 	/** A position in the chunk */
 	private static class Position {
