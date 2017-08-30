@@ -21,45 +21,46 @@ public class Repair {
 		RegionFile region = new RegionFile(file);
 		for (int chunkX = 0; chunkX <= 31; chunkX++) {
 			for (int chunkZ = 0; chunkZ <= 31; chunkZ++) {
-				DataInputStream dis = region.getChunkDataInputStream(chunkX, chunkZ);
-				if (dis == null) {
-					// No chunk data at that location - this is normal
-					continue;
-				}
-				CompoundTag chunk = NbtIo.read(dis);
-				CompoundTag level = chunk.getCompound("Level");
-				@SuppressWarnings("unchecked")
-				ListTag<CompoundTag> tileEntities = (ListTag<CompoundTag>)level.getList("TileEntities");
-				Map<Position, CompoundTag> teByPosition = new HashMap<>();
-				ListTag<CompoundTag> keptTEs = new ListTag<>("TileEntities");
-				if (tileEntities.size() > 0) {
-					System.out.println(" --- " + chunkX + ", " + chunkZ + ": " + tileEntities.size() + " tile entities --- ");
-				}
-				boolean modified = false;
-				for (int i = 0; i < tileEntities.size(); i++) {
-					CompoundTag te = tileEntities.get(i);
-					int x = te.getInt("x");
-					int y = te.getInt("y");
-					int z = te.getInt("z");
-					Position p = new Position(x, y, z);
-					if (teByPosition.containsKey(p)) {
-						System.out.println("Duplicate TE at " + x + " " + y + " " + z + "!");
-						System.out.println("1:");
-						teByPosition.get(p).print(System.out);
-						System.out.println("2:");
-						te.print(System.out);
-						modified = true;
-					} else {
-						teByPosition.put(p, te);
-						keptTEs.add(te);
+				try (DataInputStream dis = region.getChunkDataInputStream(chunkX, chunkZ)) {
+					if (dis == null) {
+						// No chunk data at that location - this is normal
+						continue;
 					}
-				}
-				
-				if (modified) {
-					System.out.println("Rewriting section!");
-					level.put("TileEntities", keptTEs);
-					try (DataOutputStream stream = region.getChunkDataOutputStream(chunkX, chunkZ)) {
-						NbtIo.write(chunk, stream);
+					CompoundTag chunk = NbtIo.read(dis);
+					CompoundTag level = chunk.getCompound("Level");
+					@SuppressWarnings("unchecked")
+					ListTag<CompoundTag> tileEntities = (ListTag<CompoundTag>)level.getList("TileEntities");
+					Map<Position, CompoundTag> teByPosition = new HashMap<>();
+					ListTag<CompoundTag> keptTEs = new ListTag<>("TileEntities");
+					if (tileEntities.size() > 0) {
+						System.out.println(" --- " + chunkX + ", " + chunkZ + ": " + tileEntities.size() + " tile entities --- ");
+					}
+					boolean modified = false;
+					for (int i = 0; i < tileEntities.size(); i++) {
+						CompoundTag te = tileEntities.get(i);
+						int x = te.getInt("x");
+						int y = te.getInt("y");
+						int z = te.getInt("z");
+						Position p = new Position(x, y, z);
+						if (teByPosition.containsKey(p)) {
+							System.out.println("Duplicate TE at " + x + " " + y + " " + z + "!");
+							System.out.println("1:");
+							teByPosition.get(p).print(System.out);
+							System.out.println("2:");
+							te.print(System.out);
+							modified = true;
+						} else {
+							teByPosition.put(p, te);
+							keptTEs.add(te);
+						}
+					}
+					
+					if (modified) {
+						System.out.println("Rewriting section!");
+						level.put("TileEntities", keptTEs);
+						try (DataOutputStream stream = region.getChunkDataOutputStream(chunkX, chunkZ)) {
+							NbtIo.write(chunk, stream);
+						}
 					}
 				}
 			}
