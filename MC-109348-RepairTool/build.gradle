@@ -1,0 +1,15 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+archivesBaseName = "RepairTool"
+version = "1.0.1"
+libsDirName = "../../libs/${version}"
+
+sourceSets {
+    main {
+        java {
+            srcDir "src"
+        }
+    }
+}
