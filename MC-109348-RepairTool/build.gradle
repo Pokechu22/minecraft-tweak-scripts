@@ -3,13 +3,18 @@ apply plugin: 'idea'
 apply plugin: 'eclipse'
 
 archivesBaseName = "RepairTool"
-version = "1.0.1-SNAPSHOT"
-libsDirName = "../../libs/${version}"
+version = "1.0.1"
+libsDirName = "../libs/${version}"
 
 sourceSets {
     main {
         java {
             srcDir "src"
         }
+    }
+}
+jar {
+    manifest {
+        attributes 'Main-Class': 'pokechu22.repairtool.Repair'
     }
 }
