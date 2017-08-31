@@ -1,5 +1,6 @@
 package pokechu22.repairtool;
 
+import java.awt.EventQueue;
 import java.io.*;
 import java.util.*;
 import com.mojang.nbt.*;
@@ -8,18 +9,21 @@ import net.minecraft.world.level.chunk.storage.RegionFile;
 public class Repair {
 	public static void main(String[] args) throws Exception {
 		if (args.length == 0) {
+			EventQueue.invokeLater(RepairUI::create);
+			return;
+		} else if (args.length == 1 && args[0].equals("--help")) {
 			System.out.println("Usage: java Repair <regions>");
 			return;
 		}
 
 		for (String arg : args) {
 			File file = new File(arg);
-			System.out.println("Processing " + file);
 			process(file);
 		}
 	}
 
-	private static void process(File file) throws Exception {
+	public static void process(File file) throws IOException {
+		System.out.println("Processing " + file);
 		RegionFile region = new RegionFile(file);
 		for (int chunkX = 0; chunkX <= 31; chunkX++) {
 			for (int chunkZ = 0; chunkZ <= 31; chunkZ++) {
