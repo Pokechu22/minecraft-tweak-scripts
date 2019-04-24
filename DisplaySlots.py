@@ -47,7 +47,7 @@ with ZipFile(jar_name, "r") as jar:
             remove_names.append(path)
 
         for c in cf.constants.find(ConstantString):
-            if c.string.value == "Listener already listening":
+            if c.string.value == "Listener already listening" or c.string.value == "Unable to construct this menu by type":
                 print "Container = %s" % cf.this.name.value
                 container_class = cf
                 # Continue searching classes, stop searching constants
@@ -57,11 +57,11 @@ with ZipFile(jar_name, "r") as jar:
                 guicontainer_class = cf
                 remove_names.append(path)
                 break
-            elif c.string.value == "textures/font/unicode_page_%02x.png":
+            elif c.string.value == "textures/font/unicode_page_%02x.png" or cf.this.name.value == 'cwa':  # HACK -- assume class for 1.14
                 print "FontRenderer = %s" % cf.this.name.value
                 fontrenderer_class = cf
                 break
-            elif c.string.value == "textures/font/ascii.png":
+            elif c.string.value == "textures/font/ascii.png" or c.string.value == "Setting user: {}":
                 print "Minecraft = %s" % cf.this.name.value
                 minecraft_class = cf
                 break
