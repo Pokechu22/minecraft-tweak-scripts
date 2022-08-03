@@ -7,20 +7,17 @@ This makes slots render their IDs.
 """
 
 from jawa.cf import ClassFile
-from jawa.constants import *
+from jawa import constants
 from jawa.util.bytecode import Instruction
 from jawa.assemble import assemble
 from zipfile import ZipFile
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+from io import BytesIO
 import tempfile
 import zipfile
 import shutil
 import os
 
-jar_name = raw_input("Enter path and file name of JAR: ")
+jar_name = input("Enter path and file name of JAR: ")
 
 brand_class = None
 container_class = None
@@ -32,7 +29,7 @@ slot_class = None
 remove_names = []
 
 with ZipFile(jar_name, "r") as jar:
-    print "Searching for classes..."
+    print("Searching for classes...")
 
     for path in jar.namelist():
         if path.startswith("META-INF"):
@@ -40,29 +37,29 @@ with ZipFile(jar_name, "r") as jar:
         if not path.endswith(".class"):
             continue
 
-        cf = ClassFile(StringIO(jar.read(path)))
+        cf = ClassFile(BytesIO(jar.read(path)))
 
         if cf.this.name.value == "net/minecraft/client/ClientBrandRetriever":
             brand_class = cf
             remove_names.append(path)
 
-        for c in cf.constants.find(ConstantString):
+        for c in cf.constants.find(constants.String):
             if c.string.value == "Listener already listening" or c.string.value == "Unable to construct this menu by type":
-                print "Container = %s" % cf.this.name.value
+                print("Container = %s" % cf.this.name.value)
                 container_class = cf
                 # Continue searching classes, stop searching constants
                 break
             elif c.string.value == "textures/gui/container/inventory.png":
-                print "GuiContainer = %s" % cf.this.name.value
+                print("GuiContainer = %s" % cf.this.name.value)
                 guicontainer_class = cf
                 remove_names.append(path)
                 break
             elif c.string.value == "textures/font/unicode_page_%02x.png" or cf.this.name.value == 'cwa':  # HACK -- assume class for 1.14
-                print "FontRenderer = %s" % cf.this.name.value
+                print("FontRenderer = %s" % cf.this.name.value)
                 fontrenderer_class = cf
                 break
             elif c.string.value == "textures/font/ascii.png" or c.string.value == "Setting user: {}":
-                print "Minecraft = %s" % cf.this.name.value
+                print("Minecraft = %s" % cf.this.name.value)
                 minecraft_class = cf
                 break
 
@@ -71,25 +68,25 @@ with ZipFile(jar_name, "r") as jar:
     for method in container_class.methods:
         if len(method.args) == 1 and method.access_flags.acc_protected:
             path = method.args[0].name + ".class"
-            slot_class = ClassFile(StringIO(jar.read(path)))
-            print "Slot = %s" % slot_class.this.name.value
+            slot_class = ClassFile(BytesIO(jar.read(path)))
+            print("Slot = %s" % slot_class.this.name.value)
             break
 
-fontrendererobj = minecraft_class.fields.find_one(type_="L" + fontrenderer_class.this.name.value + ";")
-print "Minecraft.fontRendererObj = %s" % (fontrendererobj.descriptor.value + " " + fontrendererobj.name.value)
+# fontrendererobj = minecraft_class.fields.find_one(type_="L" + fontrenderer_class.this.name.value + ";") # BROKEN
+# print("Minecraft.fontRendererObj = %s" % (fontrendererobj.descriptor.value + " " + fontrendererobj.name.value)) # BROKEN
 draw_string = fontrenderer_class.methods.find_one(args="Ljava/lang/String;FFI")
-print "FontRenderer.drawStringWithShadow = %s" % (draw_string.descriptor.value + " " + draw_string.name.value)
+print("FontRenderer.drawStringWithShadow = %s" % (draw_string.descriptor.value + " " + draw_string.name.value))
 slot_fields = list(slot_class.fields)
 slot_number = slot_fields[2]
 slot_x = slot_fields[3]
 slot_y = slot_fields[4]
-print "Slot.slotNumber = %s, Slot.x = %s, Slot.y = %s" % (slot_number.descriptor.value + " " + slot_number.name.value, slot_x.descriptor.value + " " + slot_x.name.value, slot_y.descriptor.value + " " + slot_y.name.value)
+print("Slot.slotNumber = %s, Slot.x = %s, Slot.y = %s" % (slot_number.descriptor.value + " " + slot_number.name.value, slot_x.descriptor.value + " " + slot_x.name.value, slot_y.descriptor.value + " " + slot_y.name.value))
 draw_slot = guicontainer_class.methods.find_one(args="L" + slot_class.this.name.value + ";", f=lambda m: m.access_flags.acc_private)
-print "GuiContainer.drawSlot = %s" % (draw_slot.descriptor.value + " " + draw_slot.name.value)
+print("GuiContainer.drawSlot = %s" % (draw_slot.descriptor.value + " " + draw_slot.name.value))
 get_minecraft = minecraft_class.methods.find_one(returns="L" + minecraft_class.this.name.value + ";")
-print "Minecraft.getMinecraft = %s" % (get_minecraft.descriptor.value + " " + get_minecraft.name.value)
+print("Minecraft.getMinecraft = %s" % (get_minecraft.descriptor.value + " " + get_minecraft.name.value))
 
-print "Generating new code..."
+print("Generating new code...")
 
 def new_code():
     old_instructions = list(draw_slot.code.disassemble())  # All instructions but the return
@@ -173,13 +170,13 @@ def new_code():
     yield old_instructions[-1]  # Final return
 
 for ins in new_code():
-    print ins
+    print(ins)
 
     
 # Change the code for the draw slot method
 draw_slot.code.assemble(new_code())
 # Tweak the brand
-brand_class.constants.find_one(ConstantString).value = "vanilla + SlotIDDisplay"
+brand_class.constants.find_one(constants.String).value = "vanilla + SlotIDDisplay"
 
 # OK, now we've made the changes - save them!
 
@@ -200,16 +197,16 @@ def remove_from_zip(zipfname, *filenames):
         shutil.rmtree(tempdir)
 # End stackoverflow copypaste
 
-print "Removing old classes and META-INF from zipfile..."
+print("Removing old classes and META-INF from zipfile...")
 remove_from_zip(jar_name, *remove_names)
 
-print "Writing new classes..."
+print("Writing new classes...")
 
 with ZipFile(jar_name, "a") as jar:
     for c in (guicontainer_class, slot_class, brand_class):
-        print "Writing " + c.this.name.value
+        print("Writing " + c.this.name.value)
         out = StringIO()
         c.save(out)
         jar.writestr(c.this.name.value + ".class", out.getvalue())
 
-print "Saved!  Your jar should now be updated."
+print("Saved!  Your jar should now be updated.")
